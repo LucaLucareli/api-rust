@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "apps/admin_api",
+    "apps/auth_api",
+    "apps/viewer_api",
+]

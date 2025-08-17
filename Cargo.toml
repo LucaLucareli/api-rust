@@ -1,0 +1,34 @@
+[package]
+name = "api_rust"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+members = [
+    "apps",
+]
+
+
+[dependencies]
+axum = "0.8.4"
+tokio = { version = "1.22.0", features = ["full"] }
+sea-orm = { version = "0.12.15", features = ["runtime-tokio-rustls"] }
+serde = { version = "1.0.149", features = ["derive"] }
+hyper = "1.6.0"
+hyper-util = { version = "0.1.3", features = ["tokio"] }
+tower-service = "0.3.3"
+tiberius = { version = "0.12", default-features = false, features = ["rustls", "chrono", "sql-browser-tokio"] }
+tokio-util = "0.7"
+mongodb = { version = "2.8", features = ["tokio-runtime"] }
+bson = "2.8"
+futures = "0.3"
+dotenv = "0.15"
+itertools = "0.14.0"
+serde_json = "1.0.140"
+rayon = "1.10.0"
+dotenvy = "0.15"
+chrono = { version = "0.4", features = ["serde"] }
+tokio-stream = "0.1"
+thiserror = "1.0"
+anyhow = "1.0"
+
