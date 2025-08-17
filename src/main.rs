@@ -2,26 +2,56 @@
 
 use std::net::ToSocketAddrs;
 use axum::{routing::get, Router};
-use hyper::{Request};
+use hyper::Request;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper_util::rt::tokio::TokioIo;
 use tokio::net::TcpListener;
 use tower_service::Service;
+use tracing_subscriber;
+use api_rust::config::Config;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let addr = "localhost:8000"
+    // Configurar logging
+    tracing_subscriber::fmt::init();
+
+    // Carregar configuração
+    let config = Config::from_env()?;
+
+    let addr = format!("localhost:{}", config.api_port)
         .to_socket_addrs()?
         .next()
         .expect("Erro ao resolver localhost");
 
     let listener = TcpListener::bind(addr).await.unwrap();
 
-    let app = Router::new().route("/", get(|| async { "Hello, Axum!" }));
+    // Router principal que combina todas as APIs
+    let app = Router::new()
+        .route("/", get(|| async { "API Rust Monorepo - Status: OK" }))
+        .route("/health", get(|| async { "Healthy" }))
+        .route("/auth/{*path}", get(|| async { "Auth API - Em desenvolvimento" }))
+        .route("/admin/{*path}", get(|| async { "Admin API - Em desenvolvimento" }))
+        .route("/viewer/{*path}", get(|| async { "Viewer API - Em desenvolvimento" }));
+
     let make_service = app.into_make_service();
 
-    println!("Listening on http://{}", addr);
+    // Logs estilo NestJS
+    println!("🚀 API Rust Monorepo iniciando...");
+    println!("📊 Configuração carregada:");
+    println!("   - API Principal: http://localhost:{}", config.api_port);
+    println!("   - Auth API: http://localhost:{}", config.auth_api_port);
+    println!("   - Admin API: http://localhost:{}", config.admin_api_port);
+    println!("   - Viewer API: http://localhost:{}", config.viewer_api_port);
+    println!("   - Log Level: {}", config.log_level);
+    println!("");
+    println!("🌐 Serviços disponíveis:");
+    println!("   - Auth API: http://localhost:{}/auth", config.auth_api_port);
+    println!("   - Admin API: http://localhost:{}/admin", config.admin_api_port);
+    println!("   - Viewer API: http://localhost:{}/viewer", config.viewer_api_port);
+    println!("");
+    println!("✅ API Rust Monorepo iniciada com sucesso!");
+    println!("🎯 Aguardando conexões em http://{}", addr);
 
     loop {
         let (stream, _) = listener.accept().await.unwrap();

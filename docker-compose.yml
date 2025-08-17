@@ -26,6 +26,7 @@ services:
       interval: 10s
       retries: 5
       timeout: 3s
+
   redis:
     build: ./docker/redis
     container_name: rust-cast-redis-cache
@@ -46,8 +47,31 @@ services:
       retries: 5
       timeout: 3s
 
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: rust-cast-azurite
+    restart: always
+    mem_limit: 1G
+    memswap_limit: 2G
+    cpus: 1
+    environment:
+      - AZURITE_ACCOUNTS=${AZURITE_ACCOUNT_NAME}:${AZURITE_ACCOUNT_KEY}
+    ports:
+      - '${AZURITE_BLOB_PORT:-10000}:10000'
+      - '${AZURITE_QUEUE_PORT:-10001}:10001'
+      - '${AZURITE_TABLE_PORT:-10002}:10002'
+    volumes:
+      - azurite:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:10000/devstoreaccount1 || exit 1']
+      interval: 30s
+      retries: 3
+      timeout: 10s
+
 volumes:
   redis:
     driver: local
   sqlserver:
+    driver: local
+  azurite:
     driver: local

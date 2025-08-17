@@ -1,14 +1,20 @@
-use crate::config::SqlConfig;
-use sea_orm::{Database, DatabaseConnection};
-use std::error::Error;
+use sea_orm::{DatabaseConnection, Database as SeaDatabase};
+use crate::config::Config;
+use crate::errors::Result;
 
-pub async fn connect_sql(config: &SqlConfig) -> Result<DatabaseConnection, Box<dyn Error>> {
-    let database_url = format!(
-        "sqlserver://{}:{}@{}:{}/{}",
-        config.user, config.password, config.host, config.port, config.database
-    );
+pub struct Database {
+    pub connection: DatabaseConnection,
+}
 
-    let db = Database::connect(&database_url).await?;
-
-    Ok(db)
+impl Database {
+    pub async fn new(config: &Config) -> Result<Self> {
+        let connection = SeaDatabase::connect(&config.database_url).await?;
+        
+        Ok(Self { connection })
+    }
+    
+    pub async fn test_connection(&self) -> Result<()> {
+        self.connection.ping().await?;
+        Ok(())
+    }
 }
