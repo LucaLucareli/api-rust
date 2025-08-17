@@ -1,7 +1,9 @@
 use axum::{
+    extract::{Path, State},
     http::StatusCode,
     response::Json as JsonResponse,
 };
+use sea_orm::DatabaseConnection;
 use serde::Serialize;
 use crate::services::catalog_service::CatalogService;
 
@@ -15,21 +17,15 @@ pub struct VideoCatalogResponse {
     pub thumbnail_url: String,
 }
 
-pub struct CatalogController {
-    catalog_service: CatalogService,
-}
+pub struct CatalogController;
 
 impl CatalogController {
-    pub fn new() -> Self {
-        Self {
-            catalog_service: CatalogService::new(),
-        }
-    }
-
-    pub async fn get_videos() -> Result<JsonResponse<Vec<VideoCatalogResponse>>, StatusCode> {
-        let controller = Self::new();
+    pub async fn get_videos(
+        State(db): State<DatabaseConnection>,
+    ) -> Result<JsonResponse<Vec<VideoCatalogResponse>>, StatusCode> {
+        let catalog_service = CatalogService::new(db);
         
-        match controller.catalog_service.get_videos_with_cache().await {
+        match catalog_service.get_videos_with_cache().await {
             Ok(videos) => {
                 let response: Vec<VideoCatalogResponse> = videos
                     .into_iter()
@@ -48,7 +44,30 @@ impl CatalogController {
         }
     }
 
-    pub async fn health() -> &'static str {
-        "Viewer API - Healthy"
+    pub async fn get_video_by_id(
+        State(db): State<DatabaseConnection>,
+        Path(video_id): Path<String>,
+    ) -> Result<JsonResponse<VideoCatalogResponse>, StatusCode> {
+        let catalog_service = CatalogService::new(db);
+        
+        match catalog_service.get_video_by_id(&video_id).await {
+            Ok(Some(video)) => {
+                let response = VideoCatalogResponse {
+                    id: video.id,
+                    title: video.title,
+                    description: video.description,
+                    duration: video.duration,
+                    genre: video.genre,
+                    thumbnail_url: video.thumbnail_url,
+                };
+                Ok(JsonResponse(response))
+            }
+            Ok(None) => Err(StatusCode::NOT_FOUND),
+            Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        }
+    }
+
+    pub async fn health() -> JsonResponse<&'static str> {
+        JsonResponse("Viewer API - Healthy")
     }
 }

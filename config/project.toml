@@ -1,0 +1,49 @@
+# Configuração do Projeto API Rust Monorepo
+[project]
+name = "api-rust"
+version = "0.1.0"
+description = "Sistema monorepo em Rust com múltiplas APIs"
+author = "Henrique Lucarelli"
+repository = "https://github.com/henriquelucarelli/api-rust"
+
+[architecture]
+type = "monorepo"
+pattern = "layered"
+apis = ["auth", "admin", "viewer"]
+
+[apis]
+auth = { port = 8001, description = "API de Autenticação e Usuários" }
+admin = { port = 8002, description = "API de Administração de Conteúdo" }
+viewer = { port = 8003, description = "API de Visualização de Catálogo" }
+
+[database]
+type = "sqlserver"
+version = "2019"
+port = 1433
+name = "rust_cast_db"
+
+[cache]
+type = "redis"
+version = "7"
+port = 6379
+
+[security]
+jwt_access_expiry = 1 # horas
+jwt_refresh_expiry = 7 # dias
+password_min_length = 8
+
+[development]
+rust_version = "1.70+"
+cargo_features = ["full"]
+target = "x86_64-unknown-linux-gnu"
+
+[testing]
+framework = "builtin"
+coverage = "tarpaulin"
+linting = "clippy"
+formatting = "rustfmt"
+
+[deployment]
+container = "docker"
+orchestration = "docker-compose"
+ci_cd = "github-actions"

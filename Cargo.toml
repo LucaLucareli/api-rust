@@ -3,18 +3,11 @@ name = "api_rust"
 version = "0.1.0"
 edition = "2021"
 
-[workspace]
-members = [
-    "src/apps/auth_api",
-    "src/apps/admin_api", 
-    "src/apps/viewer_api",
-]
-
 [dependencies]
 axum = "0.8.4"
 axum-extra = "0.6"
 tokio = { version = "1.22.0", features = ["full"] }
-sea-orm = { version = "0.12.15", features = ["runtime-tokio-rustls", "macros"] }
+sea-orm = { version = "0.12.15", features = ["runtime-tokio-rustls", "macros", "sqlx-sqlite"] }
 serde = { version = "1.0.149", features = ["derive"] }
 serde_json = "1.0.140"
 hyper = "1.6.0"
@@ -40,4 +33,10 @@ tower-http = { version = "0.3", features = ["cors", "trace"] }
 jsonwebtoken = "9.2"
 uuid = { version = "1.0", features = ["v4", "serde"] }
 bcrypt = "0.15"
+tower-http-auth = "0.1"
+
+# APIs individuais
+auth_api = { path = "src/apps/auth_api" }
+admin_api = { path = "src/apps/admin_api" }
+viewer_api = { path = "src/apps/viewer_api" }
 

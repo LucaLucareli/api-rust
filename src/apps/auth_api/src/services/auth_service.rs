@@ -5,6 +5,9 @@ use jsonwebtoken::{encode, EncodingKey, Header};
 use chrono::{Duration, Utc};
 use uuid::Uuid;
 
+// Importar o repositório de usuários
+use api_rust::libs::shared::database::repositories::users::{UsersRepository, LoginRequest as RepoLoginRequest, CreateUserRequest};
+
 pub struct AuthService {
     user_service: UserService,
 }
@@ -25,30 +28,55 @@ impl AuthService {
     }
 
     pub async fn login(&self, email: &str, password: &str) -> Result<TokenPair, String> {
-        // Por enquanto, autenticação mock
-        // TODO: Implementar autenticação real
-        if email == "admin@example.com" && password == "password" {
-            let token_pair = self.generate_token_pair("mock-user-id", email)
-                .map_err(|e| format!("Erro ao gerar tokens: {}", e))?;
+        let users_repo = UsersRepository::new(self.user_service.db.clone());
+        
+        // Criar request para o repositório
+        let login_request = RepoLoginRequest {
+            email: email.to_string(),
+            password: password.to_string(),
+        };
+        
+        // Tentar autenticar usando o repositório
+        match users_repo.authenticate(&login_request).await {
+            Ok(Some(user)) => {
+                // Gerar tokens para o usuário autenticado
+                let token_pair = self.generate_token_pair(&user.id, &user.email)
+                    .map_err(|e| format!("Erro ao gerar tokens: {}", e))?;
 
-            Ok(token_pair)
-        } else {
-            Err("Credenciais inválidas".to_string())
+                Ok(token_pair)
+            }
+            Ok(None) => Err("Credenciais inválidas".to_string()),
+            Err(e) => Err(format!("Erro na autenticação: {}", e)),
         }
     }
 
     pub async fn register(&self, email: &str, password: &str, name: &str, role: Option<String>) -> Result<TokenPair, String> {
-        // Por enquanto, registro mock
-        // TODO: Implementar registro real
-        let token_pair = self.generate_token_pair("new-user-id", email)
-            .map_err(|e| format!("Erro ao gerar tokens: {}", e))?;
+        let users_repo = UsersRepository::new(self.user_service.db.clone());
+        
+        // Criar request para o repositório
+        let create_request = CreateUserRequest {
+            email: email.to_string(),
+            password: password.to_string(),
+            name: name.to_string(),
+            role,
+        };
+        
+        // Criar usuário usando o repositório
+        match users_repo.create(create_request).await {
+            Ok(user) => {
+                // Gerar tokens para o usuário criado
+                let token_pair = self.generate_token_pair(&user.id, &user.email)
+                    .map_err(|e| format!("Erro ao gerar tokens: {}", e))?;
 
-        Ok(token_pair)
+                Ok(token_pair)
+            }
+            Err(e) => Err(format!("Erro ao criar usuário: {}", e)),
+        }
     }
 
     pub async fn refresh_token(&self, refresh_token: &str) -> Result<TokenPair, String> {
+        // TODO: Implementar refresh real com validação do token
         // Por enquanto, refresh mock
-        // TODO: Implementar refresh real
         let claims = self.validate_refresh_token(refresh_token)
             .map_err(|e| format!("Token de refresh inválido: {}", e))?;
 

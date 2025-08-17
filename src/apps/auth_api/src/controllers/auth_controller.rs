@@ -1,19 +1,14 @@
 use axum::{extract::{Json, State}, http::StatusCode, response::Json as JsonResponse};
+use sea_orm::DatabaseConnection;
 use serde::Deserialize;
 use crate::dto::{LoginRequestDto, RegisterRequestDto, TokenPair};
 use crate::services::auth_service::AuthService;
-use sea_orm::DatabaseConnection;
-use std::env;
 
 pub struct AuthController;
 
 impl AuthController {
-    pub fn new() -> Result<Self, String> {
-        Ok(Self)
-    }
-
     pub async fn health() -> JsonResponse<&'static str> {
-        JsonResponse("OK")
+        JsonResponse("Auth API - OK")
     }
 }
 
@@ -21,7 +16,7 @@ pub async fn login(
     State(db): State<DatabaseConnection>,
     Json(payload): Json<LoginRequestDto>,
 ) -> Result<JsonResponse<TokenPair>, StatusCode> {
-    let jwt_secret = env::var("JWT_ACCESS_SECRET")
+    let jwt_secret = std::env::var("JWT_ACCESS_SECRET")
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let auth_service = AuthService::new(db, jwt_secret)
@@ -37,7 +32,7 @@ pub async fn register(
     State(db): State<DatabaseConnection>,
     Json(payload): Json<RegisterRequestDto>,
 ) -> Result<JsonResponse<TokenPair>, StatusCode> {
-    let jwt_secret = env::var("JWT_ACCESS_SECRET")
+    let jwt_secret = std::env::var("JWT_ACCESS_SECRET")
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let auth_service = AuthService::new(db, jwt_secret)
@@ -53,7 +48,7 @@ pub async fn refresh_token(
     State(db): State<DatabaseConnection>,
     Json(payload): Json<RefreshTokenRequestDto>,
 ) -> Result<JsonResponse<TokenPair>, StatusCode> {
-    let jwt_secret = env::var("JWT_ACCESS_SECRET")
+    let jwt_secret = std::env::var("JWT_ACCESS_SECRET")
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let auth_service = AuthService::new(db, jwt_secret)

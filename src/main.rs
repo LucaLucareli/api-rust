@@ -1,15 +1,17 @@
 //https://www.tabnews.com.br/ddanielsantos/criando-uma-api-rest-com-rust
 
 use std::net::ToSocketAddrs;
-use axum::{routing::get, Router};
-use hyper::Request;
-use hyper::server::conn::http1;
-use hyper::service::service_fn;
-use hyper_util::rt::tokio::TokioIo;
+use axum::{Router, routing::get};
 use tokio::net::TcpListener;
-use tower_service::Service;
 use tracing_subscriber;
-use api_rust::config::Config;
+use std::sync::Arc;
+
+use api_rust::{
+    config::Config,
+    apps::{create_auth_router, create_admin_router, create_viewer_router},
+    libs::modules::AuthService,
+    infrastructure::db::DatabaseConnection,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -24,59 +26,57 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .next()
         .expect("Erro ao resolver localhost");
 
-    let listener = TcpListener::bind(addr).await.unwrap();
+    // Inicializar serviços
+    let auth_service = Arc::new(AuthService::new(
+        config.jwt_access_secret.clone(),
+        config.jwt_refresh_secret.clone(),
+        config.jwt_access_expiry_hours,
+        config.jwt_refresh_expiry_days,
+    ));
 
-    // Router principal que combina todas as APIs
+    // Inicializar usuários de teste
+    auth_service.initialize_test_users().await;
+
+    // Conectar ao banco de dados (em produção, usar conexão real)
+    let db = DatabaseConnection::new(&config.database_url).await?;
+
+    // Criar router principal que integra automaticamente todas as APIs
     let app = Router::new()
+        // Rotas públicas
         .route("/", get(|| async { "API Rust Monorepo - Status: OK" }))
         .route("/health", get(|| async { "Healthy" }))
-        .route("/auth/{*path}", get(|| async { "Auth API - Em desenvolvimento" }))
-        .route("/admin/{*path}", get(|| async { "Admin API - Em desenvolvimento" }))
-        .route("/viewer/{*path}", get(|| async { "Viewer API - Em desenvolvimento" }));
+        
+        // Integrar automaticamente as APIs da pasta apps
+        .nest("/auth", create_auth_router())
+        .nest("/admin", create_admin_router())
+        .nest("/viewer", create_viewer_router())
+        
+        .with_state(db);
 
-    let make_service = app.into_make_service();
+    let listener = TcpListener::bind(addr).await.unwrap();
 
     // Logs estilo NestJS
     println!("🚀 API Rust Monorepo iniciando...");
     println!("📊 Configuração carregada:");
     println!("   - API Principal: http://localhost:{}", config.api_port);
-    println!("   - Auth API: http://localhost:{}", config.auth_api_port);
-    println!("   - Admin API: http://localhost:{}", config.admin_api_port);
-    println!("   - Viewer API: http://localhost:{}", config.viewer_api_port);
     println!("   - Log Level: {}", config.log_level);
     println!("");
-    println!("🌐 Serviços disponíveis:");
-    println!("   - Auth API: http://localhost:{}/auth", config.auth_api_port);
-    println!("   - Admin API: http://localhost:{}/admin", config.admin_api_port);
-    println!("   - Viewer API: http://localhost:{}/viewer", config.viewer_api_port);
+    println!("🌐 APIs integradas automaticamente:");
+    println!("   - Auth API: http://localhost:{}/auth", config.api_port);
+    println!("   - Admin API: http://localhost:{}/admin", config.api_port);
+    println!("   - Viewer API: http://localhost:{}/viewer", config.api_port);
+    println!("");
+    println!("🔐 Usuários de teste:");
+    println!("   - Admin: admin@example.com / admin123");
+    println!("   - User: user@example.com / user123");
     println!("");
     println!("✅ API Rust Monorepo iniciada com sucesso!");
     println!("🎯 Aguardando conexões em http://{}", addr);
 
-    loop {
-        let (stream, _) = listener.accept().await.unwrap();
-        let io = TokioIo::new(stream);
-        let mut make_service = make_service.clone();
+    // Servir a aplicação
+    axum::serve(listener, app)
+        .await
+        .unwrap();
 
-        tokio::spawn(async move {
-            // Cria o serviço para esta conexão
-            let service = make_service.call(()).await.unwrap();
-
-            // Usa `service_fn` para servir as requisições
-            let handler = service_fn(move |req: Request<_>| {
-                let mut svc = service.clone();
-                async move {
-                    // Infallible porque Axum não falha
-                    svc.call(req).await.map_err(|_err| std::io::Error::new(std::io::ErrorKind::Other, "handler failed"))
-                }
-            });
-
-            if let Err(err) = http1::Builder::new()
-                .serve_connection(io, handler)
-                .await
-            {
-                eprintln!("server error: {}", err);
-            }
-        });
-    }
+    Ok(())
 }

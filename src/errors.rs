@@ -37,3 +37,21 @@ impl From<serde_json::Error> for AppError {
         AppError::Validation(err.to_string())
     }
 }
+
+impl From<std::env::VarError> for AppError {
+    fn from(err: std::env::VarError) -> Self {
+        AppError::Config(err.to_string())
+    }
+}
+
+impl From<std::net::AddrParseError> for AppError {
+    fn from(err: std::net::AddrParseError) -> Self {
+        AppError::Config(err.to_string())
+    }
+}
+
+impl From<std::num::ParseIntError> for AppError {
+    fn from(err: std::num::ParseIntError) -> Self {
+        AppError::Config(err.to_string())
+    }
+}

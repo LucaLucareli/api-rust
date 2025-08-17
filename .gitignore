@@ -1,2 +1,105 @@
-/target
+# Rust
+/target/
+**/*.rs.bk
+*.pdb
+
+# Cargo
+Cargo.lock
+*.orig
+
+# IDE
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+log/
+
+# Environment
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Docker
+.dockerignore
+
+# Build artifacts
+dist/
+build/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Cache
+.cache/
+*.cache
+
+# Coverage
+coverage/
+*.profraw
+target/tarpaulin/
+
+# Dependencies
+node_modules/
+vendor/
+
+# Backup files
+*.orig
+*.rej
+*.old
+
+# Local configuration
+config/local/
+config/dev/
+config/test/
+config/prod/
+
+# Scripts output
+scripts/output/
+scripts/logs/
+
+# Documentation build
+docs/build/
+docs/_build/
+docs/site/
+
+# Migration artifacts
+config/migrations/*.sql.bak
+config/migrations/*.sql.old
+
+# Docker volumes
+docker/volumes/
+docker/data/
+
+# Test artifacts
+test-results/
+test-output/
